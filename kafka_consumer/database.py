@@ -12,3 +12,17 @@ db = client[DATABASE_NAME]
 # Collections
 twitter_users_collection = db["twitter_users"]
 task_statuses_collection = db["task_statuses"]
+
+
+#Helper functions
+def create_user(user_data):
+    """
+    Inserts a user into the twitter_users collection.
+    """
+    return twitter_users_collection.insert_one(user_data).inserted_id
+
+def create_task(task_data):
+    """
+    Inserts a task into the task_statuses collection.
+    """
+    return task_statuses_collection.insert_one(task_data).inserted_id
