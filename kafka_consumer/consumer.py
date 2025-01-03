@@ -1,5 +1,7 @@
+from kafka_consumer.database import twitter_users_collection, task_statuses_collection
+from pymongo.errors import PyMongoError
+import logging
 import asyncio
-import json
 from aiokafka import AIOKafkaConsumer
 import logging
 from kafka_consumer.database import twitter_users_collection, task_statuses_collection, create_task, create_user
