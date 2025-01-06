@@ -1,11 +1,13 @@
-from kafka_consumer.database import twitter_users_collection, task_statuses_collection
 from pymongo.errors import PyMongoError
-import logging
-import asyncio
 from aiokafka import AIOKafkaConsumer
-import logging
-from kafka_consumer.database import twitter_users_collection, task_statuses_collection, create_task, create_user
 from pymongo.errors import PyMongoError
+import asyncio
+import logging
+import random
+import json
+
+from kafka_consumer.database import twitter_users_collection,task_statuses_collection ,create_task, create_user
+
 
 KAFKA_BROKER_URL = "localhost:9092"
 TOPIC_NAME = "twitter_login_requests"
@@ -30,7 +32,8 @@ async def consume():
 
 async def process_message(message):
     """
-    Process and store the message in MongoDB with a reference between user and task.
+    Process the task, simulate Twitter login and update the task status.
+    If the user does not exist, create the user first.
     """
     try:
         # Check if the user exists
@@ -50,19 +53,33 @@ async def process_message(message):
             user_id = user["_id"]
             logger.info(f"User found with ID: {user_id}")
 
-        # Create a task with a reference to the user
+        #Simulate Twitter login
+        login_status = simulate_twitter_login()
+        
+        # Update or create the task status in the task_statuses collection
         task_data = {
             "task_id": message["task_id"],
             "user_id": user_id,
-            "status": "pending"  # Default status for new tasks
+            "status": login_status  # Default status for new tasks
         }
-        task_id = create_task(task_data)
-        logger.info(f"Task created with ID: {task_id}")
+        
+        task_statuses_collection.update_one(
+            {"task_id": message["task_id"]}, #Filter by task_id
+            {"$set": task_data}, #Set new task data
+            upsert=True
+        )
+        
+        logger.info(f"Task {message['task_id']} processed with status: {login_status}")
 
     except PyMongoError as e:
         logger.error(f"Error processing message: {e}")
     
 
+def simulate_twitter_login():
+    """
+    Simulates twitter login by randomly returning 'success' or 'failure'
+    """
+    return random.choice(["success","failure"])
 
 if __name__ == "__main__":
     asyncio.run(consume())
