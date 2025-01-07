@@ -5,6 +5,7 @@ import asyncio
 import logging
 import random
 import json
+from bson import ObjectId
 from kafka_consumer.database import twitter_users_collection, task_statuses_collection, create_task, create_user
 
 
@@ -67,49 +68,50 @@ async def consume():
 
 async def process_message(message):
     """
-    Process the task, simulate Twitter login and update the task status.
-    If the user does not exist, create the user first.
+    Process the task, simulate Twitter login, and update the task status.
+    Include a reference to the user who made the request.
     """
     try:
-        # Check if the user exists
-        user = twitter_users_collection.find_one({"username": message["username"]})
+        # Check if the Twitter user already exists
+        twitter_user = twitter_users_collection.find_one({"username": message["username"]})
 
-        if not user:
-            # Create the user if not exists
+        if not twitter_user:
+            # Create the Twitter user if not exists
             encrypted_password = encrypt_text(message["password"])
             user_data = {
                 "username": message["username"],
                 "encrypted_password": encrypted_password,
                 "phone_number": message["phone_number"],
                 "email": message.get("email"),
+                "user_id": ObjectId(message["user_id"]),  # Reference to the user in the `users` collection
             }
             user_id = create_user(user_data)
-            logger.info(f"User created with ID: {user_id}")
+            logger.info(f"Twitter user created with ID: {user_id}")
         else:
-            user_id = user["_id"]
-            logger.info(f"User found with ID: {user_id}")
+            user_id = twitter_user["_id"]
+            logger.info(f"Twitter user found with ID: {user_id}")
 
-        #Simulate Twitter login
+        # Simulate Twitter login
         login_status = simulate_twitter_login()
-        
-        # Update or create the task status in the task_statuses collection
+
+        # Update or create the task status in the `task_statuses` collection
         task_data = {
             "task_id": message["task_id"],
-            "user_id": user_id,
-            "status": login_status  # Default status for new tasks
+            "user_id": ObjectId(message["user_id"]),  # Reference to the user in the `users` collection
+            "status": login_status,
         }
-        
+
         task_statuses_collection.update_one(
-            {"task_id": message["task_id"]}, #Filter by task_id
-            {"$set": task_data}, #Set new task data
+            {"task_id": message["task_id"]},  # Filter by task_id
+            {"$set": task_data},  # Set new task data
             upsert=True
         )
-        
+
         logger.info(f"Task {message['task_id']} processed with status: {login_status}")
 
     except PyMongoError as e:
         logger.error(f"Error processing message: {e}")
-    
+
 
 
 def simulate_twitter_login():
