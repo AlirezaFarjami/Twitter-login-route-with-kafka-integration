@@ -119,26 +119,32 @@ Example using Docker Compose:
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
+version: "3.8"
+
 services:
   zookeeper:
-    image: bitnami/zookeeper:latest
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: kafka-setup-zookeeper-1
     environment:
-      - ZOO_ENABLE_AUTH=no
-    ports:
-      - "2181:2181"
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
 
   kafka:
-    image: bitnami/kafka:latest
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-setup-kafka-1
     ports:
       - "9092:9092"
     environment:
-      - KAFKA_BROKER_ID=1
-      - KAFKA_LISTENERS=PLAINTEXT://:9092
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-    depends_on:
-      - zookeeper
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://:9093,EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      # ADDITIONAL CONFIGURATIONS FOR SINGLE BROKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
 ```
 
 Start Kafka with:
