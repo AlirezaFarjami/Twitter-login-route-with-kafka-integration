@@ -1,5 +1,45 @@
 # FastAPI + Kafka + MongoDB Twitter Login Project
 
+### Project Overview
+
+This project is a FastAPI-based application designed to handle Twitter login requests, manage user authentication, and integrate with Kafka for asynchronous message processing. It includes a MongoDB database for storing user information and task statuses, ensuring a secure and scalable workflow.
+
+#### Core Features
+1. **User Management**:
+   - Users can register via the `/register` endpoint, providing a `username` and `password`.
+   - Passwords are securely hashed using `bcrypt`, and JWT tokens are issued for authentication.
+
+2. **Twitter Login**:
+   - Authenticated users can send login requests to the `/twitter-login` endpoint.
+   - Requests are sent to a Kafka topic (`twitter_login_requests`) for processing by a Kafka consumer.
+
+3. **Task and Status Tracking**:
+   - The Kafka consumer simulates the Twitter login and updates the task status (e.g., success or failure) in the database.
+
+#### Database Relationships
+The project uses MongoDB to manage three collections:
+
+1. **Users**:
+   - Stores registered user details, including `username` and `hashed_password`.
+   - Each user has a unique `_id`.
+
+2. **Twitter Users**:
+   - Tracks Twitter account details, including `username`, `encrypted_password`, `phone_number`, and `email`.
+   - References the corresponding `user_id` from the `users` collection to identify which user initiated the request.
+
+3. **Task Statuses**:
+   - Tracks the status of login tasks (e.g., success or failure) with `task_id`, `status`, and the associated `user_id` from the `users` collection.
+
+#### Data Flow
+1. **Register**: Users register with `/register`, and their credentials are securely stored in the `users` collection. A JWT token is returned for authentication.
+2. **Login**: Users authenticate via `/login` and receive a JWT token.
+3. **Twitter Login**: Authenticated users send requests to `/twitter-login`. The system:
+   - Identifies the user using the JWT token.
+   - Links the request to the user in the `users` collection.
+   - Processes the request through Kafka, with results stored in `twitter_users` and `task_statuses`.
+
+This architecture ensures clear relationships between users, their Twitter accounts, and task statuses while maintaining security and scalability.
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed and available:
@@ -25,7 +65,7 @@ Before you begin, ensure you have the following installed and available:
 │   │   ├── dependencies.py          # Reusable JWT validation dependency
 │   │   ├── hash_utils.py            # Password hashing and verification utilities
 │   │   ├── jwt_utils.py             # JWT creation and validation functions
-│   │   └── security
+│   │   └── helpers.py
 │   ├── kafka
 │   │   └── producer.py
 │   ├── main.py                      # FastAPI app with endpoints
@@ -287,3 +327,4 @@ The project now includes JWT-based authentication to ensure secure access to pro
 
 ---
 
+**Enjoy building with FastAPI, Kafka, and MongoDB!** If you run into any issues or need additional explanations, feel free to ask for clarifications.
