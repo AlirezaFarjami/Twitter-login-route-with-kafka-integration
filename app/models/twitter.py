@@ -5,4 +5,3 @@ class TwitterLoginRequests(BaseModel):
     password: str = Field(..., example="password123")
     phone_number: str = Field(..., example="1234567890")
     email: EmailStr | None = Field(None, example="test@example.com")
-
