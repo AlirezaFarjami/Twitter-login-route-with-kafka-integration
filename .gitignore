@@ -1,0 +1,18 @@
+.env/
+.venv/
+__pycache__/
+
+# Test and temporary files
+*.csv
+testconsume/test.py
+testconsume
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS generated files
+.DS_Store
+Thumbs.db

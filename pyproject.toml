@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "twitter-login-kafka"
+version = "0.1.0"
+description = "A FastAPI project with Kafka integration"
+authors = ["alireza <alirezafarjamiwp@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+uvicorn = {extras = ["standard"], version = "^0.34.0"}
+fastapi = {extras = ["all"], version = "^0.115.6"}
+kafka-python = "^2.0.2"
+aiokafka = "^0.12.0"
+decouple = "^0.0.7"
+pytest-asyncio = "^0.25.1"
+beanie = "^1.28.0"
+motor = "^3.6.0"
+fastapi-limiter = "^0.1.6"
+redis = "^5.2.1"
+aioredis = "^2.0.1"
+pymongo = "4.9"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+httpx = "^0.28.1"
+asynctest = "^0.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
