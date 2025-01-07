@@ -19,6 +19,9 @@ fastapi-limiter = "^0.1.6"
 redis = "^5.2.1"
 aioredis = "^2.0.1"
 pymongo = "4.9"
+python-jose = "^3.3.0"
+passlib = "^1.7.4"
+cryptography = "^44.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"

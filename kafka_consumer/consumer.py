@@ -14,6 +14,42 @@ TOPIC_NAME = "twitter_login_requests"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+import os
+from cryptography.fernet import Fernet
+
+ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
+fernet = Fernet(ENCRYPTION_KEY)
+
+def encrypt_text(plaintext: str) -> bytes:
+    """
+    Encrypts the plaintext using Fernet and returns encrypted bytes.
+    """
+    return fernet.encrypt(plaintext.encode())
+
+def decrypte(username: str) -> str:
+    """
+    Retrieves a user's encrypted password from the DB by username,
+    decrypts it using the Fernet key, and returns the plaintext password.
+    Returns None if the user or encrypted password is not found.
+    """
+    encryption_key = ENCRYPTION_KEY
+    if not encryption_key:
+        raise ValueError("No ENCRYPTION_KEY found in environment variables.")
+
+    fernet = Fernet(encryption_key)
+
+    user_doc = twitter_users_collection.find_one({"username": username})
+    if not user_doc:
+        return None  # User not found
+
+    encrypted_password = user_doc.get("encrypted_password")
+    if not encrypted_password:
+        return None  # No password stored
+
+    decrypted_bytes = fernet.decrypt(encrypted_password)
+    return decrypted_bytes.decode()
+
+
 async def consume():
     consumer = AIOKafkaConsumer(
         TOPIC_NAME,
@@ -40,9 +76,10 @@ async def process_message(message):
 
         if not user:
             # Create the user if not exists
+            encrypted_password = encrypt_text(message["password"])
             user_data = {
                 "username": message["username"],
-                "password": message["password"],
+                "encrypted_password": encrypted_password,
                 "phone_number": message["phone_number"],
                 "email": message.get("email"),
             }
@@ -74,9 +111,11 @@ async def process_message(message):
         logger.error(f"Error processing message: {e}")
     
 
+
 def simulate_twitter_login():
     """
     Simulates twitter login by randomly returning 'success' or 'failure'
+    decrypte(username: str) can be called here
     """
     return random.choice(["success","failure"])
 
