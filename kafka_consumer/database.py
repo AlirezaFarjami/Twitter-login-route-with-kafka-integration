@@ -12,7 +12,7 @@ db = client[DATABASE_NAME]
 # Collections
 twitter_users_collection = db["twitter_users"]
 task_statuses_collection = db["task_statuses"]
-
+users_collection = db["users"]
 
 #Helper functions
 def create_user(user_data):
