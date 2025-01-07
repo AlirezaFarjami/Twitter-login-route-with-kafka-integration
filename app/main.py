@@ -12,6 +12,7 @@ from kafka_consumer.database import users_collection
 from app.core.hash_utils import get_password_hash, verify_password
 from app.core.jwt_utils import create_access_token
 from app.core.dependencies import get_current_user
+from app.core.helpers import get_user_id_by_username
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -71,6 +72,7 @@ async def register_user(user_data: UserRegister):
         "token_type": "bearer"
     }
 
+
 @app.post("/login")
 async def login(user_data: UserLogin):
     # 1. Find the user by username
@@ -98,17 +100,27 @@ async def login(user_data: UserLogin):
     }
 
 @app.post("/twitter-login", dependencies=[Depends(RateLimiter(times=5, seconds=60))])
-async def twitter_login(request: TwitterLoginRequests, current_user: dict = Depends(get_current_user)):
+async def twitter_login(
+    request: TwitterLoginRequests,
+    current_user: dict = Depends(get_current_user)
+):
     """
-    Accepts user credentials and processes them via Kafka
+    Accepts user credentials and processes them via Kafka. 
+    Requires JWT authentication.
     """
-    #This line generates a unique task ID
+    # 1. Generate a unique task ID
     task_id = str(uuid.uuid4())
-    
-    #Preparing the message to send to Kafka
-    message = request.model_dump() #Converting the Pydantic model to a python dictionary
+
+    # 2. Fetch the user's MongoDB `_id`
+    user_id = get_user_id_by_username(current_user["username"])
+
+    # 3. Prepare the message to send to Kafka
+    message = request.model_dump()  # Convert Pydantic model to a Python dictionary
     message["task_id"] = task_id
+    message["user_id"] = str(user_id)  # Include the user's MongoDB ID as a string
     logger.info(f"Sending message to Kafka: {message}")
+
+    # 4. Send the message to Kafka
     await send_to_kafka(TOPIC_NAME, message)
 
     return {"task_id": task_id}
