@@ -22,18 +22,22 @@ Before you begin, ensure you have the following installed and available:
 │   ├── __init__.py
 │   ├── api
 │   ├── core
+│   │   ├── dependencies.py          # Reusable JWT validation dependency
+│   │   ├── hash_utils.py            # Password hashing and verification utilities
+│   │   ├── jwt_utils.py             # JWT creation and validation functions
 │   │   └── security
 │   ├── kafka
 │   │   └── producer.py
-│   ├── main.py
+│   ├── main.py                      # FastAPI app with endpoints
 │   ├── models
-│   │   └── twitter.py
+│   │   ├── user.py                  # Pydantic models for register and login
+│   │   ├── twitter.py               # Pydantic models for /twitter-login
 │   └── tests
 ├── kafka_consumer
-│   ├── consumer.py
-│   └── database.py
+│   ├── consumer.py                  # Kafka consumer logic
+│   ├── database.py                  # MongoDB interaction for user and task collections
 ├── poetry.lock
-├── pyproject.toml
+├── pyproject.toml                   # Poetry dependencies
 └── pytest.ini
 ```
 
@@ -119,32 +123,26 @@ Example using Docker Compose:
 
 ```yaml
 # docker-compose.yml
-version: "3.8"
-
+version: '3.8'
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: kafka-setup-zookeeper-1
+    image: bitnami/zookeeper:latest
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      - ZOO_ENABLE_AUTH=no
+    ports:
+      - "2181:2181"
 
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka-setup-kafka-1
+    image: bitnami/kafka:latest
     ports:
       - "9092:9092"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: INTERNAL://:9093,EXTERNAL://:9092
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,EXTERNAL://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      # ADDITIONAL CONFIGURATIONS FOR SINGLE BROKER
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      - KAFKA_BROKER_ID=1
+      - KAFKA_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    depends_on:
+      - zookeeper
 ```
 
 Start Kafka with:
@@ -225,6 +223,38 @@ The consumer will connect to Kafka, listen for messages on the `twitter_login_re
 3. **Observe the Consumer logs** – If the consumer is running, you’ll see messages in the terminal indicating that it has received a new message and processed the task.
 
 4. **Check MongoDB** – Verify that collections `twitter_users` and `task_statuses` are created or updated with the correct data.
+
+---
+
+## JWT Authentication
+
+### Overview
+
+The project now includes JWT-based authentication to ensure secure access to protected endpoints.
+
+### Implementation Details
+
+#### Registration (`/register`)
+
+- Users can register with a username and password.
+- Passwords are securely hashed using bcrypt (via passlib).
+- A JWT token is returned upon successful registration.
+
+#### Login (`/login`)
+
+- Authenticates users by verifying their credentials against the database.
+- Returns a JWT token with the user’s username in the payload (`sub` claim).
+
+#### Protected Endpoint (`/twitter-login`)
+
+- Access is restricted to authenticated users with a valid JWT token.
+- Tokens are validated using a reusable dependency, ensuring security and ease of integration for other routes.
+
+### Supporting Files and Modules
+
+- **JWT Utilities** (`app/core/security/jwt_utils.py`): Contains functions for generating and validating JWT tokens.
+- **Password Hashing** (`app/core/security/hash_utils.py`): Handles secure password hashing and verification.
+- **Token Validation Dependency** (`app/core/security/dependencies.py`): Provides a reusable dependency for validating tokens in protected routes.
 
 ---
 
