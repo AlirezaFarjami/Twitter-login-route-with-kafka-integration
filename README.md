@@ -287,4 +287,3 @@ The project now includes JWT-based authentication to ensure secure access to pro
 
 ---
 
-**Enjoy building with FastAPI, Kafka, and MongoDB!** If you run into any issues or need additional explanations, feel free to ask for clarifications.
